@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>This is Simple Authentication Page</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"></script>
+  </head>
+  <script>
+    async function signup() {
+      const username = document.getElementById("usernameup").value;
+      const pswd = document.getElementById("pswdup").value;
+      console.log(username);
+      const response = await axios.post("http://localhost:3000/signup", {
+        username: username,
+        pswd: pswd,
+      });
+      alert(response.data.message);
+      alert("signed up successfully");
+    }
+    async function signin() {
+      const username = document.getElementById("username").value;
+      const pswd = document.getElementById("pswd").value;
+
+      const response = await axios.post("http://localhost:3000/signin", {
+        username: username,
+        pswd: pswd,
+      });
+      localStorage.setItem("token", response.data.token);
+      console.log(localStorage.getItem("token"));
+
+      alert("signed in successfully", response.data);
+      user();
+    }
+    async function user() {
+      const token = localStorage.getItem("token");
+      const data = await axios
+        .get("http://localhost:3000/me", {
+          headers: {
+            authroization: token,
+          },
+        })
+        .then((response) => {
+          console.log(response.data);
+          const user = document.createElement("h1");
+          user.innerHTML = response.data.username;
+          const sectiondiv = document.getElementById("information");
+          sectiondiv.appendChild(user);
+        })
+        .catch((error) => console.error("Error:", error));
+    }
+    async function logout() {
+      localStorage.removeItem("token");
+    }
+  </script>
+  <style>
+    .body {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+    }
+    div {
+      background-color: rgb(211, 211, 211);
+
+      height: 200px;
+
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      margin: 4px;
+    }
+    input,
+    button {
+      height: 24px;
+      margin: 2px;
+    }
+  </style>
+  <body>
+    <div class="body">
+      <div class="signup">
+        Username:<input type="text" name="username" id="usernameup" />
+        passwrod:<input type="password" id="pswdup" />
+        <button onclick="signup()">Signup</button>
+      </div>
+      <div class="sigin">
+        Username:<input type="text" name="username" id="username" />
+        passwrod:<input type="password" id="pswd" />
+        <button onclick="signin()">Signin</button>
+      </div>
+      <button onclick="logout()">Logout</button>
+    </div>
+    <div>
+      User information:
+      <div id="information"></div>
+    </div>
+  </body>
+</html>
