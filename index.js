@@ -1,27 +1,25 @@
 const express = require("express");
-const { mkdirSync } = require("fs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const app = express();
 const jwtsecret = "hellothisismikha";
+
 app.use(express.json());
 app.use(
   cors({
     origin: "http://localhost:5500", // Replace with your frontend's URL
   })
 );
-app.get("/", (req, res) => {
-  res.sendFile(
-    "/mnt/d/cohort3/webdev/http/express-practice/authentication/public/index.html"
-  );
-});
+
+let users = [];
+
 function auth(req, res, next) {
-  const token = req.headers.authroization;
+  const token = req.headers.authorization; // Fix typo
   if (token) {
     jwt.verify(token, jwtsecret, (err, decoded) => {
       if (err) {
-        res.status(401).send({
-          message: "unauthorized4",
+        return res.status(401).send({
+          message: "Unauthorized",
           err: err,
         });
       } else {
@@ -30,71 +28,98 @@ function auth(req, res, next) {
       }
     });
   } else {
-    res.status(401).send({
-      message: "unatuhtorized1",
-    });
+    return res.status(401).send({ message: "Unauthorized" });
   }
 }
 
-const users = [];
-const todos = [];
-
 app.post("/signup", (req, res) => {
-  const username = req.body.username;
-  const pswd = req.body.pswd;
-
-  const user = users.find((user) => user.username == username);
-
+  const { username, pswd } = req.body;
+  const user = users.find((user) => user.username === username);
   if (user) {
-    res.status(401).send({
-      message: "user already exist",
-    });
-  } else {
-    users.push({
-      username: username,
-      pswd: pswd,
-    });
-    res.send({
-      message: "You have signed up",
-    });
+    return res.status(401).send({ message: "User already exists" });
   }
-});
-app.post("/signin", (req, res) => {
-  const username = req.body.username;
-  const pswd = req.body.pswd;
 
+  users.push({
+    username: username,
+    pswd: pswd,
+    todos: [], // Initialize todos array
+  });
+
+  res.send({ message: "You have signed up" });
+});
+
+app.post("/signin", (req, res) => {
+  const { username, pswd } = req.body;
   const user = users.find(
     (user) => user.username === username && user.pswd === pswd
   );
+
   if (user) {
-    const token = jwt.sign({ username: user.username }, jwtsecret);
-    user.token = token;
-    res.send({
-      token,
+    const token = jwt.sign({ username: user.username }, jwtsecret, {
+      expiresIn: "1h",
     });
+    res.send({ token });
   } else {
-    res.status(401).send({
-      message: "unauthorized",
-    });
+    res.status(401).send({ message: "Invalid username or password" });
   }
 });
-//app.use(auth);
+
+app.use(auth);
+
 app.get("/me", auth, (req, res) => {
-  const user = req.user;
+  res.send({ username: req.user.username });
+});
+
+app.get("/todos", (req, res) => {
+  const user = users.find((u) => u.username === req.user.username);
   if (user) {
-    res.send({
-      username: user.username,
-    });
+    res.status(200).send({ todos: user.todos });
   } else {
-    res.status(401).send({
-      message: "unauthorized2",
-    });
+    res.status(404).send({ message: "No todos found" });
   }
 });
 
-app.get("/todos", (req, res) => {});
-app.post("/addtodo", (req, res) => {});
-app.delete("/deltodo", (req, res) => {});
-app.put("/update", (req, res) => {});
+app.post("/addtodo", (req, res) => {
+  const user = users.find((u) => u.username === req.user.username);
+  const { title, task } = req.body;
+  if (user && title && task) {
+    user.todos.push({ title, task });
+    res.status(200).send({ message: "Todo added", todos: user.todos });
+  } else {
+    res.status(400).send({ message: "Invalid data" });
+  }
+});
 
-app.listen(3000);
+app.put("/update", (req, res) => {
+  const user = users.find((u) => u.username === req.user.username);
+  const { oldtask, newtask } = req.body;
+  if (user) {
+    const todo = user.todos.find((todo) => todo.task === oldtask);
+    if (todo) {
+      todo.task = newtask;
+      res.status(200).send({ message: "Todo updated", todos: user.todos });
+    } else {
+      res.status(404).send({ message: "Todo does not exist" });
+    }
+  } else {
+    res.status(400).send({ message: "Invalid request" });
+  }
+});
+
+app.delete("/deltodo", (req, res) => {
+  const user = users.find((u) => u.username === req.user.username);
+  const { task } = req.body;
+  if (user) {
+    const initialLength = user.todos.length;
+    user.todos = user.todos.filter((todo) => todo.task !== task);
+    if (initialLength !== user.todos.length) {
+      res.status(200).send({ message: "Todo deleted", todos: user.todos });
+    } else {
+      res.status(404).send({ message: "Todo not found" });
+    }
+  } else {
+    res.status(400).send({ message: "Invalid request" });
+  }
+});
+
+app.listen(3000, () => console.log("Server running on port 3000"));

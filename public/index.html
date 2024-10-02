@@ -75,6 +75,15 @@
       height: 24px;
       margin: 2px;
     }
+    .update {
+      background-color: bisque;
+    }
+    .delete {
+      background-color: rgb(255, 106, 106);
+    }
+    .todos {
+      background-color: rgb(154, 255, 154);
+    }
   </style>
   <body>
     <div class="body">
@@ -93,6 +102,21 @@
     <div>
       User information:
       <div id="information"></div>
+      <div class="update">
+        Oldtask<input type="text" name="" id="old" /> Newtask<input
+          type="text"
+          name=""
+          id="new"
+        />
+        <button onclick="updateTodo()">Update</button>
+      </div>
+      <div class="delete">
+        <input type="text" id="deltask" />
+        <button onclick="deletetodo()">Delete</button>
+      </div>
+
+      <h2>Todos</h2>
+      <div id="todos"></div>
     </div>
   </body>
 </html>
